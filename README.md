@@ -2,9 +2,11 @@
 
 Shows your assigned hotkey on every in-game icon. Personalised to your layout.
 
+<img width="510" height="258" alt="preview" src="https://github.com/user-attachments/assets/07c0987b-487a-4385-80c7-f9f4a6cf6a8d" />
+
 This runs as a standard mod however; as your hotkeys are unique to you there is a .exe file which will customise the mod to suit your personal hotkeys.
 
-Note: If you change a hotkey - Re-run the exe to reupdate the mod. <img width="510" height="258" alt="preview" src="https://github.com/user-attachments/assets/07c0987b-487a-4385-80c7-f9f4a6cf6a8d" />
+Note: If you change a hotkey - Re-run the exe to reupdate the mod. 
 
 
 ## How to use
