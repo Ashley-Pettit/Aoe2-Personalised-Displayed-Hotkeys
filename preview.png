@@ -1,0 +1,656 @@
+#!/usr/bin/env python3
+"""
+AoE2 DE Hotkey Icon Baker - Standalone GUI
+Double-click to run. Builds as .exe with:
+  pip install pyinstaller && python -m PyInstaller --onefile --noconsole aoe2_hotkey_baker_standalone.py
+"""
+
+import os, sys, glob, zlib, struct, csv, json, io, traceback
+
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError:
+    input("Pillow is required. Run: pip install pillow\nPress Enter to exit.")
+    sys.exit(1)
+
+# ---------------------------------------------------------------------------
+# Bundled icon-to-hotkey mapping
+# ---------------------------------------------------------------------------
+MAPPING = {
+    "actions/000_.png": 19240,
+    "actions/002_.png": 20208,
+    "actions/003_.png": 19216,
+    "actions/006_.png": 19312,
+    "actions/007_.png": 19313,
+    "actions/008_.png": 19314,
+    "actions/009_.png": 19315,
+    "actions/010_.png": 19316,
+    "actions/011_.png": 19317,
+    "actions/017_.png": 19225,
+    "actions/028_.png": 19224,
+    "actions/030_.png": 19352,
+    "actions/031_.png": 19215,
+    "actions/032_.png": 19243,
+    "actions/040_.png": 19304,
+    "actions/041_.png": 200008,
+    "actions/043_.png": 19303,
+    "actions/047_.png": 19226,
+    "actions/048_.png": 19227,
+    "actions/049_.png": 19319,
+    "actions/050_.png": 19318,
+    "actions/051_.png": 19317,
+    "actions/052_.png": 19316,
+    "actions/053_.png": 19315,
+    "actions/054_.png": 19318,
+    "actions/057_.png": 19314,
+    "actions/058_.png": 19086,
+    "actions/060_.png": 19220,
+    "actions/061_.png": 19319,
+    "actions/062_.png": 19306,
+    "actions/063_.png": 19305,
+    "actions/064_.png": 20208,
+    "actions/065_.png": 19304,
+    "actions/066_.png": 19303,
+    "actions/067_.png": 19306,
+    "actions/068_.png": 19305,
+    "actions/069_.png": 19012,
+    "actions/070_.png": 19100,
+    "actions/071_.png": 19100,
+    "actions/074_.png": 19350,
+    "actions/075_.png": 19350,
+    "actions/086_.png": 19324,
+    "actions/087_.png": 19234,
+    "actions/088_.png": 19320,
+    "actions/104_.png": 19224,
+    "buildings/000_archery_range_1.DDS": 19062,
+    "buildings/001_archery_range_3.DDS": 19062,
+    "buildings/002_barracks_1.DDS": 19064,
+    "buildings/003_barracks_3.DDS": 19064,
+    "buildings/004_blacksmith_1.DDS": 19063,
+    "buildings/005_blacksmith_2.DDS": 19063,
+    "buildings/006_blacksmith_3.DDS": 19063,
+    "buildings/007_castle.DDS": 19066,
+    "buildings/008_fortress.DDS": 19066,
+    "buildings/009_outpost.DDS": 19203,
+    "buildings/010_monastery_1.DDS": 19065,
+    "buildings/011_monastery_3.DDS": 19065,
+    "buildings/012_monastery_4.DDS": 19065,
+    "buildings/013_dock_1.DDS": 19067,
+    "buildings/014_dock_2.DDS": 19067,
+    "buildings/015_dock_3.DDS": 19067,
+    "buildings/016_market_1.DDS": 19237,
+    "buildings/017_market_3.DDS": 19237,
+    "buildings/018_market_4.DDS": 19237,
+    "buildings/019_mill_1.DDS": 19236,
+    "buildings/020_mill_2.DDS": 19236,
+    "buildings/021_mill_3.DDS": 19236,
+    "buildings/022_siege_workshop_2.DDS": 19205,
+    "buildings/023_stable_1.DDS": 19206,
+    "buildings/024_stable_3.DDS": 19206,
+    "buildings/025_tower.DDS": 19201,
+    "buildings/026_tower_keep.DDS": 19201,
+    "buildings/027_tower_guard.DDS": 19201,
+    "buildings/028_town_center.DDS": 19238,
+    "buildings/030_palisade.DDS": 19210,
+    "buildings/031_stone_wall.DDS": 19211,
+    "buildings/032_fortified_wall.DDS": 19211,
+    "buildings/033_university.DDS": 19208,
+    "buildings/034_house.DDS": 19213,
+    "buildings/035_farm.DDS": 19200,
+    "buildings/036_gate.DDS": 19264,
+    "buildings/037_wonder.DDS": 19209,
+    "buildings/038_outpost.DDS": 19203,
+    "buildings/039_mining_camp.DDS": 19288,
+    "buildings/040_lumber_camp.DDS": 19283,
+    "buildings/041_fish_trap.DDS": 19202,
+    "buildings/042_bombard_tower.DDS": 19204,
+    "buildings/044_palisade_gate.DDS": 19212,
+    "buildings/045_accursed_tower.DDS": 19201,
+    "buildings/053_feitoria.DDS": 19075,
+    "buildings/055_krepost.DDS": 19329,
+    "buildings/086_folwark.dds": 19236,
+    "buildings/087_caravanserai.dds": 19148,
+    "buildings/088_fortified_church.dds": 19065,
+    "buildings/089_mule_cart.dds": 19283,
+    "tech/000_crop_rotation.DDS": 19337,
+    "tech/001_heavy_plow.DDS": 19337,
+    "tech/002_horse_collar.DDS": 19337,
+    "tech/003_banking.DDS": 19349,
+    "tech/004_cartography.DDS": 90005,
+    "tech/005_sappers.DDS": 19084,
+    "tech/006_loom.DDS": 19333,
+    "tech/007_coinage.DDS": 19349,
+    "tech/010_husbandry.DDS": 19469,
+    "tech/011_faith.DDS": 19482,
+    "tech/012_chemistry.DDS": 19492,
+    "tech/013_masonry.DDS": 19488,
+    "tech/014_architecture.DDS": 19488,
+    "tech/015_gold_mining.DDS": 19338,
+    "tech/016_keep.DDS": 19496,
+    "tech/017_forging.DDS": 19470,
+    "tech/018_iron_casting.DDS": 19470,
+    "tech/019_spies-treason.DDS": 19086,
+    "tech/021_blast_furnace.DDS": 19470,
+    "tech/022_chain_mail_armor.DDS": 19471,
+    "tech/023_chain_barding_armor.DDS": 19472,
+    "tech/025_ballistics.DDS": 19491,
+    "tech/027_capped_ram.DDS": 19475,
+    "tech/028_elite_skirmisher.DDS": 19459,
+    "tech/029_crossbowman.DDS": 19458,
+    "tech/030_feudal_age.DDS": 19336,
+    "tech/031_castle_age.DDS": 19336,
+    "tech/032_imperial_age.DDS": 19336,
+    "tech/033_unique_tech_castle.DDS": 19081,
+    "tech/034_fletching.DDS": 19473,
+    "tech/035_bodkin_arrow.DDS": 19473,
+    "tech/036_pikeman.DDS": 19452,
+    "tech/037_bracer.DDS": 19473,
+    "tech/038_heavy_scorpion.DDS": 19477,
+    "tech/042_hand_cart.DDS": 19334,
+    "tech/043_light_cavalry.DDS": 19464,
+    "tech/044_champion.DDS": 19451,
+    "tech/045_paladin.DDS": 19465,
+    "tech/046_fortified_wall.DDS": 19497,
+    "tech/047_bombard_tower.DDS": 19492,
+    "tech/048_long_swordsman.DDS": 19451,
+    "tech/049_padded_archer_armor.DDS": 19474,
+    "tech/050_leather_archer_armor.DDS": 19474,
+    "tech/051_ring_archer_armor.DDS": 19474,
+    "tech/052_heavy_cav_archer.DDS": 19460,
+    "tech/053_two-handed_swordsman.DDS": 19451,
+    "tech/054_arbalest.DDS": 19458,
+    "tech/055_heavy_camel.DDS": 19466,
+    "tech/057_onager.DDS": 19476,
+    "tech/058_guilds.DDS": 19450,
+    "tech/060_treadmill_crane.DDS": 19489,
+    "tech/061_murder_holes.DDS": 19495,
+    "tech/062_gold_shaft_mining.DDS": 19338,
+    "tech/063_scale_mail_armor.DDS": 19471,
+    "tech/064_plate_mail_armor.DDS": 19471,
+    "tech/065_plate_barding_armor.DDS": 19472,
+    "tech/066_scale_barding_armor.DDS": 19472,
+    "tech/069_town_watch.DDS": 19335,
+    "tech/070_double-bit_axe.DDS": 19340,
+    "tech/071_bow_saw.DDS": 19340,
+    "tech/073_fervor.DDS": 19480,
+    "tech/074_imperial_camel.DDS": 19466,
+    "tech/075_eagle_warrior.DDS": 19453,
+    "tech/076_guard_tower.DDS": 19496,
+    "tech/078_cavalier.DDS": 19465,
+    "tech/079_wheelbarrow.DDS": 19334,
+    "tech/080_squires.DDS": 19455,
+    "tech/081_two-man_saw.DDS": 19340,
+    "tech/082_block_printing.DDS": 19484,
+    "tech/083_sanctity.DDS": 19481,
+    "tech/084_illumination.DDS": 19483,
+    "tech/085_man-at-arms.DDS": 19451,
+    "tech/086_siege_ram.DDS": 19475,
+    "tech/087_stone_mining.DDS": 19339,
+    "tech/088_stone_shaft_mining.DDS": 19339,
+    "tech/089_town_patrol.DDS": 19335,
+    "tech/091_conscription.DDS": 19085,
+    "tech/092_redemption.DDS": 19478,
+    "tech/093_atonement.DDS": 19479,
+    "tech/096_siege_onager.DDS": 19476,
+    "tech/101_siege_engineers.DDS": 19493,
+    "tech/103_hoardings.DDS": 19083,
+    "tech/104_heated_shot.DDS": 19490,
+    "tech/105_elite_unique_unit.DDS": 19080,
+    "tech/106_halberdier.DDS": 19452,
+    "tech/107_unique_tech_imperial.DDS": 19082,
+    "tech/108_heresy.DDS": 19485,
+    "tech/109_theocracy.DDS": 19486,
+    "tech/110_bloodlines.DDS": 19468,
+    "tech/111_parthian_tactics.DDS": 19462,
+    "tech/112_thumb_ring.DDS": 19461,
+    "tech/113_caravan.DDS": 19348,
+    "tech/114_herbal_medicine.DDS": 19487,
+    "tech/115_elite_eagle_warrior.DDS": 19453,
+    "tech/116_gambesons.dds": 19454,
+    "tech/118_arson.DDS": 19456,
+    "tech/119_arrowslits.DDS": 19494,
+    "tech/120_imperial_skirmisher.DDS": 19459,
+    "tech/121_elite_battle_elephant.DDS": 19152,
+    "tech/122_hussar.DDS": 19464,
+    "tech/123_elite_steppe_lancer.DDS": 19467,
+    "tech/125_winged_hussar.dds": 19464,
+    "tech/129_legionary.dds": 19451,
+    "tech/130_savar.dds": 19465,
+    "tech/131_devotion.dds": 90006,
+    "tech/144_champi_warrior.dds": 19451,
+    "tech/145_elite_champi_warrior.dds": 19451,
+    "tech/146_champi_runner.dds": 19451,
+    "units/001_50730.DDS": 19030,
+    "units/002_50730.DDS": 19030,
+    "units/008_50730.DDS": 19035,
+    "units/010_50730.DDS": 19035,
+    "units/011_50730.DDS": 19034,
+    "units/012_50730.DDS": 19035,
+    "units/013_50730.DDS": 19035,
+    "units/015_50730.DDS": 19054,
+    "units/016_50730.DDS": 19054,
+    "units/017_50730.DDS": 19038,
+    "units/018_50730.DDS": 19038,
+    "units/019_50730.DDS": 19040,
+    "units/020_50730.DDS": 19043,
+    "units/021_50730.DDS": 19043,
+    "units/022_50730.DDS": 19041,
+    "units/023_50730.DDS": 19044,
+    "units/024_50730.DDS": 19045,
+    "units/025_50730.DDS": 19059,
+    "units/027_50730.DDS": 19285,
+    "units/029_50730.DDS": 19321,
+    "units/030_50730.DDS": 19047,
+    "units/031_50730.DDS": 19034,
+    "units/033_50730.DDS": 19051,
+    "units/034_50730.DDS": 19286,
+    "units/035_50730.DDS": 19030,
+    "units/036_50730.DDS": 19322,
+    "units/037_50730.DDS": 19322,
+    "units/038_50730.DDS": 19322,
+    "units/039_50730.DDS": 19322,
+    "units/041_50730.DDS": 19322,
+    "units/042_50730.DDS": 19322,
+    "units/043_50730.DDS": 19322,
+    "units/044_50730.DDS": 19322,
+    "units/045_50730.DDS": 19322,
+    "units/046_50730.DDS": 19322,
+    "units/047_50730.DDS": 19322,
+    "units/049_50730.DDS": 19030,
+    "units/050_50730.DDS": 19073,
+    "units/055_50730.DDS": 19055,
+    "units/063_50730.DDS": 19056,
+    "units/064_50730.DDS": 19060,
+    "units/071_50730.DDS": 19040,
+    "units/072_50730.DDS": 19035,
+    "units/073_50730.DDS": 19056,
+    "units/074_50730.DDS": 19056,
+    "units/078_50730.DDS": 19031,
+    "units/079_50730.DDS": 19031,
+    "units/080_50730.DDS": 19049,
+    "units/087_50730.DDS": 19059,
+    "units/089_50730.DDS": 19049,
+    "units/090_50730.DDS": 19038,
+    "units/091_50730.DDS": 19060,
+    "units/095_50730.DDS": 19284,
+    "units/097_50730.DDS": 19322,
+    "units/099_50730.DDS": 19322,
+    "units/100_50730.DDS": 19322,
+    "units/101_50730.DDS": 19285,
+    "units/102_50730.DDS": 19285,
+    "units/103_50730.DDS": 19060,
+    "units/104_50730.DDS": 19034,
+    "units/105_50730.DDS": 19322,
+    "units/106_50730.DDS": 19322,
+    "units/108_50730.DDS": 19322,
+    "units/117_50730.DDS": 19322,
+    "units/121_50730.DDS": 19060,
+    "units/122_50730.DDS": 19286,
+    "units/123_50730.DDS": 19322,
+    "units/124_50730.DDS": 19322,
+    "units/131_50730.DDS": 19051,
+    "units/133_50730.DDS": 19032,
+    "units/139_50730.DDS": 19035,
+    "units/148_50730.DDS": 19070,
+    "units/149_50730.DDS": 19070,
+    "units/169_50730.DDS": 19051,
+    "units/190_50730.DDS": 19322,
+    "units/195_50730.DDS": 19322,
+    "units/203_50730.DDS": 19279,
+    "units/217_50730.DDS": 19051,
+    "units/218_50730.DDS": 19051,
+    "units/229_50730.DDS": 19043,
+    "units/249_50730.DDS": 19322,
+    "units/250_50730.DDS": 19322,
+    "units/252_50730.DDS": 19322,
+    "units/253_50730.DDS": 19322,
+    "units/287_50730.DDS": 19286,
+    "units/288_50730.DDS": 19286,
+    "units/289_50730.DDS": 19286,
+    "units/291_50730.DDS": 19051,
+    "units/292_50730.DDS": 19051,
+    "units/296_50730.DDS": 19322,
+    "units/311_50730.DDS": 19051,
+    "units/369_50730.dds": 19322,
+    "units/428_50730.dds": 19321,
+    "units/459_50730.dds": 19285,
+    "units/460_50730.dds": 19285,
+}
+
+# ---------------------------------------------------------------------------
+# VK codes / .hkp parser / image tools (same as before, compacted)
+# ---------------------------------------------------------------------------
+VK = {0x08:"Bksp",0x09:"Tab",0x0D:"Enter",0x1B:"Esc",0x20:"Spc",0x21:"PgUp",0x22:"PgDn",
+      0x23:"End",0x24:"Home",0x25:"Left",0x26:"Up",0x27:"Right",0x28:"Down",0x2D:"Ins",
+      0x2E:"Del",0xC0:"`",0xBD:"-",0xBB:"=",0xDB:"[",0xDD:"]",0xDC:"\\",0xBA:";",
+      0xDE:"'",0xBC:",",0xBE:".",0xBF:"/",0x00:""}
+for c in range(0x30,0x3A): VK[c]=chr(c)
+for c in range(0x41,0x5B): VK[c]=chr(c)
+for c in range(0x70,0x7C): VK[c]="F"+str(c-0x6F)
+for c in range(0x60,0x6A): VK[c]="N"+str(c-0x60)
+
+def key_name(code): return VK.get(code,"0x%02X"%code)
+
+def parse_hkp(path):
+    data=zlib.decompress(open(path,"rb").read(),-15); out={}; pos=0
+    while True:
+        g=data.find(b"GroupHeaderGuard",pos)
+        if g<0: break
+        s=g+len("GroupHeaderGuard"); e=data.find(b"HandlerBaseGroupEnd",s)
+        if e<0: break
+        p=data[s:e]; pos=e+len("HandlerBaseGroupEnd")
+        if len(p)<12: continue
+        key,hid=struct.unpack("<ii",p[:8])
+        if key==0: out[hid]=""
+        else:
+            mods=[]
+            if p[8]&1: mods.append("Ctrl")
+            if p[9]&1: mods.append("Alt")
+            if p[10]&1: mods.append("Shift")
+            out[hid]="+".join(mods+[key_name(key)])
+    return out
+
+def validate_hkp(path):
+    """Returns (ok, num_bindings) or raises."""
+    try:
+        binds = parse_hkp(path)
+        bound = sum(1 for v in binds.values() if v)
+        return len(binds) > 50, bound
+    except Exception:
+        return False, 0
+
+def _font(size):
+    for name in ["arialbd.ttf","arial.ttf","seguisb.ttf",
+                 "DejaVuSans-Bold.ttf","LiberationSans-Bold.ttf"]:
+        for path in [os.path.join(os.environ.get("WINDIR",r"C:\Windows"),"Fonts",name),
+                     "/usr/share/fonts/truetype/dejavu/"+name,
+                     "/usr/share/fonts/truetype/liberation/"+name,name]:
+            try: return ImageFont.truetype(path,size)
+            except: pass
+    return ImageFont.load_default()
+
+def read_image(path):
+    im=Image.open(path); im.load(); return im.convert("RGBA")
+
+def _dds_header(w,h):
+    b=bytearray(128); b[0:4]=b"DDS "
+    struct.pack_into("<I",b,4,124)
+    struct.pack_into("<I",b,8,0x1|0x2|0x4|0x1000|0x8)
+    struct.pack_into("<i",b,12,h); struct.pack_into("<i",b,16,w)
+    struct.pack_into("<I",b,20,w*4); struct.pack_into("<I",b,28,1)
+    struct.pack_into("<I",b,76,32); struct.pack_into("<I",b,80,0x1|0x40)
+    struct.pack_into("<I",b,88,32); struct.pack_into("<I",b,92,0xFF)
+    struct.pack_into("<I",b,96,0xFF00); struct.pack_into("<I",b,100,0xFF0000)
+    struct.pack_into("<I",b,104,0xFF000000); struct.pack_into("<I",b,108,0x1000)
+    return bytes(b)
+
+def write_baked(img,out_path):
+    d=os.path.dirname(out_path)
+    if d: os.makedirs(d,exist_ok=True)
+    img=img.convert("RGBA")
+    if out_path.lower().endswith(".png"): img.save(out_path,"PNG"); return
+    w,h=img.size
+    with open(out_path,"wb") as f: f.write(_dds_header(w,h)); f.write(img.tobytes("raw","RGBA"))
+
+def bake_text(img,text,corner="br",scale=0.45,alpha=255):
+    if not text: return img
+    img=img.convert("RGBA"); w,h=img.size
+    layer=Image.new("RGBA",img.size,(0,0,0,0)); d=ImageDraw.Draw(layer)
+    target_h=int(h*scale); target_w=int(w*0.9)
+    lo,hi=8,max(16,h*3); best=lo
+    for _ in range(24):
+        mid=(lo+hi)//2
+        if mid==best: break
+        bb=_font(mid).getbbox(text); gw,gh=bb[2]-bb[0],bb[3]-bb[1]
+        if gh<=target_h and gw<=target_w: best=mid; lo=mid+1
+        else: hi=mid-1
+    size=best; font=_font(size); bbox=font.getbbox(text)
+    tw,th=bbox[2]-bbox[0],bbox[3]-bbox[1]; pad=int(w*0.03)
+    if corner=="br": x,y=w-tw-pad,h-th-pad
+    elif corner=="bl": x,y=pad,h-th-pad
+    elif corner=="tr": x,y=w-tw-pad,pad
+    elif corner=="tl": x,y=pad,pad
+    else: x,y=(w-tw)//2,(h-th)//2
+    ox,oy=x-bbox[0],y-bbox[1]; sh=max(2,size//30)
+    for dx,dy in ((sh,sh),(sh,0),(0,sh)):
+        d.text((ox+dx,oy+dy),text,font=font,fill=(0,0,0,140))
+    pp=max(3,size//8)
+    pl=[x-pp,y-pp,x+tw+pp,y+th+pp]
+    try: d.rounded_rectangle(pl,radius=max(2,pp//2),fill=(0,0,0,160))
+    except: d.rectangle(pl,fill=(0,0,0,160))
+    d.text((ox,oy),text,font=font,fill=(255,255,255,alpha))
+    return Image.alpha_composite(img,layer)
+
+# ---------------------------------------------------------------------------
+# Auto-detect icons
+# ---------------------------------------------------------------------------
+def find_icons():
+    for drive in "CDEFG":
+        for sub in [r"Program Files (x86)\Steam",r"Program Files\Steam",
+                    "Steam","SteamLibrary"]:
+            p=os.path.join(drive+":\\",sub,"steamapps","common","AoE2DE",
+                           "widgetui","textures","ingame")
+            if os.path.isdir(p): return p
+    return None
+
+def find_mods_local():
+    home=os.path.expanduser("~")
+    hits=sorted(glob.glob(os.path.join(home,"Games","Age of Empires 2 DE","*","mods","local")))
+    # skip dummy folders like "0", prefer real Steam ID (long numeric)
+    for d in hits:
+        steam_id=d.replace("\\","/").split("/")
+        for part in steam_id:
+            if part.isdigit() and len(part)>5:
+                return d
+    # fallback: any non-"0" folder
+    for d in hits:
+        if os.sep+"0"+os.sep not in d and "/0/" not in d:
+            return d
+    return hits[0] if hits else None
+
+# ---------------------------------------------------------------------------
+# Build
+# ---------------------------------------------------------------------------
+MOD_NAME="Hotkey Letters (personal)"
+
+def build_mod(hkp_paths, icons_dir, out_dir, log=print):
+    binds={}
+    for p in hkp_paths:
+        if p and os.path.isfile(p):
+            binds.update(parse_hkp(p))
+    ing=os.path.join(out_dir,"widgetui","textures","ingame")
+    done=skipped=0
+    for rel,hid in MAPPING.items():
+        combo=binds.get(hid,"")
+        if not combo: skipped+=1; continue
+        src=os.path.join(icons_dir,rel)
+        if not os.path.isfile(src):
+            parent=os.path.join(icons_dir,os.path.dirname(rel))
+            base=os.path.basename(rel).lower(); found=None
+            if os.path.isdir(parent):
+                for f in os.listdir(parent):
+                    if f.lower()==base: found=os.path.join(parent,f); break
+            if not found: skipped+=1; continue
+            src=found
+        try:
+            img=read_image(src); img=bake_text(img,combo)
+            write_baked(img,os.path.join(ing,rel)); done+=1
+        except Exception as e:
+            log("  skip %s (%s)"%(rel,e)); skipped+=1
+    os.makedirs(out_dir,exist_ok=True)
+    json.dump({"Author":"local","Title":MOD_NAME,
+               "Description":"Hotkey letters baked from your profile.","IsUIMod":True},
+              open(os.path.join(out_dir,"info.json"),"w"),indent=2)
+    return done,skipped
+
+# ---------------------------------------------------------------------------
+# GUI
+# ---------------------------------------------------------------------------
+def run_gui():
+    import tkinter as tk
+    from tkinter import filedialog
+
+    icons_dir = find_icons()
+    mods_dir = find_mods_local()
+
+    root = tk.Tk()
+    root.title("AoE2 DE Hotkey Icon Baker")
+    root.configure(bg="#0f0f1a")
+    root.geometry("600x620")
+    root.resizable(False, True)
+
+    # -- colours --
+    BG = "#0f0f1a"
+    CARD = "#1a1a2e"
+    ACCENT = "#8857A4"
+    GREEN = "#2ecc71"
+    RED = "#e74c3c"
+    GREY = "#888"
+    WHITE = "#eee"
+
+    # -- title --
+    tk.Label(root, text="AoE2 DE Hotkey Icon Baker", font=("Segoe UI", 20, "bold"),
+             fg=WHITE, bg=BG).pack(pady=(20, 4))
+    tk.Label(root, text="Bakes your hotkeys onto your in-game icons",
+             font=("Segoe UI", 10), fg=GREY, bg=BG).pack()
+
+    # -- step 1: load Base.hkp --
+    f1 = tk.Frame(root, bg=CARD, highlightbackground="#333", highlightthickness=1)
+    f1.pack(fill="x", padx=24, pady=(20, 8), ipady=10)
+
+    tk.Label(f1, text="Step 1", font=("Segoe UI", 12, "bold"),
+             fg=ACCENT, bg=CARD).pack(anchor="w", padx=14, pady=(8, 0))
+    tk.Label(f1, text="Load your Base.hkp file", font=("Segoe UI", 11),
+             fg=WHITE, bg=CARD).pack(anchor="w", padx=14)
+    tk.Label(f1, text="Found in:  ...\\Age of Empires 2 DE\\<your id>\\profile\\<YourProfile>\\Base.hkp",
+             font=("Consolas", 9), fg=GREY, bg=CARD, wraplength=540, justify="left"
+             ).pack(anchor="w", padx=14, pady=(2, 6))
+
+    status_var = tk.StringVar(value="No file loaded")
+    status_label = tk.Label(f1, textvariable=status_var, font=("Segoe UI", 10, "bold"),
+                            fg=GREY, bg=CARD)
+    status_label.pack(anchor="w", padx=14)
+
+    loaded_path = [None]
+
+    def browse():
+        p = filedialog.askopenfilename(
+            title="Select Base.hkp",
+            filetypes=[("HKP files", "*.hkp"), ("All files", "*.*")])
+        if not p: return
+        try:
+            ok, count = validate_hkp(p)
+            if ok:
+                loaded_path[0] = p
+                status_var.set("Correct file loaded  (%d hotkey slots found)" % count)
+                status_label.configure(fg=GREEN)
+                build_btn.configure(state="normal", bg=ACCENT)
+            else:
+                status_var.set("Incorrect file - does not look like a valid Base.hkp")
+                status_label.configure(fg=RED)
+        except Exception:
+            status_var.set("Error reading file - not a valid .hkp")
+            status_label.configure(fg=RED)
+
+    tk.Button(f1, text="Browse for Base.hkp...", command=browse,
+              bg="#2a2a4a", fg=WHITE, font=("Segoe UI", 10),
+              activebackground="#3a3a5a", relief="flat", padx=12, pady=4
+              ).pack(anchor="w", padx=14, pady=(4, 8))
+
+    # -- step 2: icons (auto-detected) --
+    f2 = tk.Frame(root, bg=CARD, highlightbackground="#333", highlightthickness=1)
+    f2.pack(fill="x", padx=24, pady=8, ipady=10)
+
+    tk.Label(f2, text="Step 2", font=("Segoe UI", 12, "bold"),
+             fg=ACCENT, bg=CARD).pack(anchor="w", padx=14, pady=(8, 0))
+    tk.Label(f2, text="Game icons", font=("Segoe UI", 11),
+             fg=WHITE, bg=CARD).pack(anchor="w", padx=14)
+
+    if icons_dir:
+        tk.Label(f2, text="Auto-detected: " + icons_dir,
+                 font=("Consolas", 9), fg=GREEN, bg=CARD, wraplength=540, justify="left"
+                 ).pack(anchor="w", padx=14, pady=(2, 4))
+    else:
+        tk.Label(f2, text="Not found automatically",
+                 font=("Segoe UI", 9), fg=RED, bg=CARD).pack(anchor="w", padx=14)
+        def browse_icons():
+            nonlocal icons_dir
+            p = filedialog.askdirectory(title="Select the ingame icons folder")
+            if p: icons_dir = p
+        tk.Button(f2, text="Browse...", command=browse_icons,
+                  bg="#2a2a4a", fg=WHITE, font=("Segoe UI", 10),
+                  relief="flat").pack(anchor="w", padx=14, pady=(2, 8))
+
+    # -- log area --
+    log_frame = tk.Frame(root, bg=BG)
+    log_frame.pack(fill="both", expand=True, padx=24, pady=(8, 4))
+    log_text = tk.Text(log_frame, height=6, bg="#111", fg="#ccc",
+                       font=("Consolas", 9), wrap="word", state="disabled",
+                       relief="flat", borderwidth=0)
+    log_text.pack(fill="both", expand=True)
+
+    def log(msg):
+        log_text.configure(state="normal")
+        log_text.insert("end", msg + "\n")
+        log_text.see("end")
+        log_text.configure(state="disabled")
+        root.update_idletasks()
+
+    # -- build button --
+    def go():
+        if not loaded_path[0]:
+            status_var.set("Please load Base.hkp first")
+            status_label.configure(fg=RED)
+            return
+        if not icons_dir:
+            log("Icons folder not set."); return
+
+        out = os.path.join(mods_dir, MOD_NAME) if mods_dir else \
+              os.path.join(os.path.dirname(os.path.abspath(__file__)), MOD_NAME)
+
+        # Find both files: Base.hkp + the profile .hkp next to it
+        base = loaded_path[0]
+        profile_dir = os.path.dirname(os.path.dirname(base))  # up from <Profile>/Base.hkp
+        profile_name = os.path.basename(os.path.dirname(base))  # folder name = profile name
+        profile_hkp = os.path.join(profile_dir, profile_name + ".hkp")
+        hkp_paths = [base]
+        if os.path.isfile(profile_hkp):
+            hkp_paths.append(profile_hkp)
+            log("Base.hkp: " + base)
+            log("Profile: " + profile_hkp)
+        else:
+            log("Reading hotkeys from: " + base)
+            log("(Profile .hkp not found next to Base.hkp, using Base only)")
+        log("Icons: " + icons_dir)
+        log("Output: " + out)
+        log("Baking %d mapped icons..." % len(MAPPING))
+        build_btn.configure(state="disabled", bg="#555")
+        root.update_idletasks()
+
+        try:
+            done, skipped = build_mod(hkp_paths, icons_dir, out, log)
+            log("\nBaked %d icons. Skipped %d (unbound keys)." % (done, skipped))
+            log("Enable '%s' in the in-game Mods menu." % MOD_NAME)
+            build_btn.configure(text="Done - You may exit this application",
+                                bg=GREEN, fg="#111", state="disabled",
+                                font=("Segoe UI", 13, "bold"))
+        except Exception:
+            log("\nError:\n" + traceback.format_exc())
+            build_btn.configure(state="normal", bg=ACCENT)
+
+    build_btn = tk.Button(root, text="Build Mod", command=go,
+                          bg="#555", fg=WHITE, disabledforeground="#888",
+                          font=("Segoe UI", 13, "bold"),
+                          activebackground="#9967b4", relief="flat",
+                          padx=24, pady=8, state="disabled")
+    build_btn.pack(pady=(4, 20))
+
+    root.mainloop()
+
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    try:
+        import tkinter
+        run_gui()
+    except ImportError:
+        input("tkinter not available. Install Python with tk support.\nPress Enter to exit.")
