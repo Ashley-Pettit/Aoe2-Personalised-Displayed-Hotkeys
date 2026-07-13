@@ -1,6 +1,10 @@
-# AoE2 DE - Hotkey Letters on Icons
+# AoE2 DE - Personalised Displayed Hotkeys 
 
 Shows your assigned hotkey on every in-game icon. Personalised to your layout.
+
+This runs as a standard mod however; as your hotkeys are unique to you there is a .exe file which will customise the mod to suit your personal hotkeys.
+
+Note: If you change a hotkey - Re-run the exe to reupdate the mod. 
 
 ## How to use
 
@@ -8,8 +12,8 @@ Shows your assigned hotkey on every in-game icon. Personalised to your layout.
 2. Follow the prompt in the application. It will ask you to upload your base.hkp file (as this stores your current hotkey setup). 
    `C:\Users\<you>\Games\Age of Empires 2 DE\<steam id>\profile\<YourProfile>\Base.hkp`
 4. Click **Build Mod**
-5. In-game: Mods > enable **"Hotkey Letters (personal)"**
+5. In-game: Mods > enable **"Personalised Displayed Hotkeys [CORE]"**
 
-Changed your hotkeys? Save them in-game, run the tool again.
+Most icons covered. Safe for ranked.
 
-298 icons covered. UI mod only. Safe for ranked.
+Icons have been manually categorised. Should be almost bugfree but if there is an issue with a new unit, new tech etc... let me know so I can fix. 
