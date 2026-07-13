@@ -9,13 +9,14 @@ This runs as a standard mod however; as your hotkeys are unique to you there is 
 Note: If you change a hotkey - Re-run the exe to reupdate the mod. 
 
 
-## How to use
+## To get going
 
-1. Download and run **AoE2_Hotkey_Icon_Baker.exe** 
-2. Follow the prompt in the application. It will ask you to upload your base.hkp file (as this stores your current hotkey setup). 
-   `C:\Users\<you>\Games\Age of Empires 2 DE\<steam id>\profile\<YourProfile>\Base.hkp`
-4. Click **Build Mod**
-5. In-game: Mods > enable **"Personalised Displayed Hotkeys [CORE]"**
+1 - Use the .exe to customise the mod for you! 
+ Download **AoE2_Hotkey_Icon_Baker.exe** and run it.  
+ It will ask you to upload your base.hkp file (as this stores your current hotkey setup). 
+   You'll find this somewhere like this --->> `C:\Users\<you>\Games\Age of Empires 2 DE\<steam id>\profile\<YourProfile>\Base.hkp`
+   Click **Build Mod**
+2. In-game: Mods > enable **"Personalised Displayed Hotkeys [CORE]"**
 
 Most icons covered. Safe for ranked.
 
