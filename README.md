@@ -2,8 +2,6 @@
 
 Shows your assigned hotkey on every in-game icon. Personalised to your layout.
 
-![Preview](preview.png)
-
 ## How to use
 
 1. Download and run **AoE2_Hotkey_Icon_Baker.exe** 
