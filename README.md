@@ -12,7 +12,7 @@ Note: If you change a hotkey - Re-run the exe to reupdate the mod.
 ## To get going
 
 1. Use the .exe to customise the mod for you! 
-Download **AoE2_Hotkey_Icon_Baker.exe** and run it.  
+Download **PersonaliseHotkeys.exe** and run it.  
 It will ask you to upload your base.hkp file (as this stores your current hotkey setup). 
 You'll find this somewhere like this --->> `C:\Users\<you>\Games\Age of Empires 2 DE\<steam id>\profile\<YourProfile>\Base.hkp`
 Once you get the green light from the exe then jump into aoe2. 
